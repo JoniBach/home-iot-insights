@@ -25,11 +25,13 @@ object Main extends IOApp.Simple {
           
       _ <- insights.traverse_ { insight =>
         IO.println("-" * 80) *>
-        IO.println(s"Device ID: ${insight.deviceId.getOrElse("N/A")}") *>
+        IO.println(s"ID: ${insight.id.getOrElse("N/A")}") *>
+        IO.println(s"MAC Address: ${insight.macAddress}") *>
+        IO.println(s"Sensor: ${insight.sensor}") *>
         IO.println(s"Average Temperature: ${insight.value}°C") *>
         IO.println(s"Building ID: ${insight.buildingId.getOrElse("N/A")}") *>
         IO.println(s"Room ID: ${insight.roomId.getOrElse("N/A")}") *>
-        IO.println(s"Sensor ID: ${insight.sensorId.getOrElse("N/A")}") *>
+        IO.println(s"Insight Type ID: ${insight.insightTypeId.getOrElse("N/A")}") *>
         IO.println(s"Time Range: ${insight.rangeFrom.getOrElse("N/A")} to ${insight.rangeTo.getOrElse("N/A")}") *>
         IO.println(s"Created At: ${insight.createdAt}")
       }

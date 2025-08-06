@@ -5,8 +5,9 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import java.io.{PrintWriter, StringWriter}
 
-import core.usecases.GenerateInsights
-import infrastructure.db.repositories.ReadingsRepository
+import application.usecases.DailyAverageTemperature
+import infrastructure.db.repositories.{DoobieDeviceRoomBuildingRepository, ReadingsRepository, SensorsRepository}
+import cats.implicits._
 
 class InsightsLambdaHandler extends RequestHandler[Unit, String] {
 
@@ -22,15 +23,41 @@ class InsightsLambdaHandler extends RequestHandler[Unit, String] {
 
     try {
       val readingsRepo = new ReadingsRepository()
-      val generateInsights = new GenerateInsights[IO](readingsRepo)
-
-      val result = generateInsights.execute().attempt.unsafeRunSync()
+      val deviceRoomBuildingRepo = new DoobieDeviceRoomBuildingRepository()
+      val sensorRepo = new SensorsRepository()
+      
+      val averageTemperature = new DailyAverageTemperature(readingsRepo, deviceRoomBuildingRepo, sensorRepo)
+      
+      logger.log("=== Starting Daily Average Temperature Calculation ===")
+      logger.log("Fetching and calculating average temperatures...\n")
+      
+      val result = averageTemperature.execute().attempt.unsafeRunSync()
 
       result match {
         case Right(insights) =>
-          val message = s"Successfully generated ${insights.length} insights"
-          logger.log(message)
-          s"$message. First insight: ${insights.headOption.map(_.id).getOrElse("No insights")}"
+          val message = s"=== Insights Generated ===\n" +
+            s"Successfully generated ${insights.length} insights\n"
+          
+          val insightsLog = if (insights.isEmpty) {
+            "No insights were generated. The database might be empty or there was an issue processing the data.\n"
+          } else {
+            insights.map { insight =>
+              "-" * 80 + "\n" +
+              s"ID: ${insight.id.getOrElse("N/A")}\n" +
+              s"MAC Address: ${insight.macAddress}\n" +
+              s"Sensor: ${insight.sensor}\n" +
+              s"Average Temperature: ${insight.value}°C\n" +
+              s"Building ID: ${insight.buildingId.getOrElse("N/A")}\n" +
+              s"Room ID: ${insight.roomId.getOrElse("N/A")}\n" +
+              s"Insight Type ID: ${insight.insightTypeId.getOrElse("N/A")}\n" +
+              s"Time Range: ${insight.rangeFrom.getOrElse("N/A")} to ${insight.rangeTo.getOrElse("N/A")}\n" +
+              s"Created At: ${insight.createdAt}"
+            }.mkString("\n")
+          }
+          
+          val fullMessage = message + insightsLog + "\n\n=== End of Insights ==="
+          logger.log(fullMessage)
+          fullMessage
 
         case Left(error) =>
           val errorMessage = s"❌ Failed to generate insights: ${error.getMessage}\n${stackTraceToString(error)}"

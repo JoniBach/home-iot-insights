@@ -17,15 +17,15 @@ final class GenerateInsights[F[_]: Monad](
       readings.map { r =>
         Insight(
           id = None,
+          macAddress = r.macAddress,
+          sensor = r.sensor,
+          value = r.temperature,
           buildingId = None,
           roomId = None,
-          sensorId = None,
           insightTypeId = None,
-          deviceId = None,
-          createdAt = Instant.now(),
           rangeFrom = None,
           rangeTo = None,
-          value = r.temperature
+          createdAt = Instant.now()
         )
       }
     }
