@@ -8,5 +8,6 @@ final case class Reading(
   macAddress: String,
   temperature: Double,
   humidity: Double,
-  pressure: Double
+  pressure: Double,
+  sensor: String
 )

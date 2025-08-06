@@ -5,6 +5,7 @@ import core.ports.ReadingRepository
 
 import cats.Monad
 import cats.syntax.all._
+import java.time.Instant
 
 final class GenerateInsights[F[_]: Monad](
     readingRepo: ReadingRepository[F]
@@ -15,10 +16,16 @@ final class GenerateInsights[F[_]: Monad](
       // Just convert each Reading into a simple Insight with minimal data
       readings.map { r =>
         Insight(
-          id = r.id.toInt,
-          title = s"Reading from ${r.macAddress}",
-          description = s"Temperature: ${r.temperature}°C, Humidity: ${r.humidity}%",
-          value = s"At ${r.createdAt}"
+          id = None,
+          buildingId = None,
+          roomId = None,
+          sensorId = None,
+          insightTypeId = None,
+          deviceId = None,
+          createdAt = Instant.now(),
+          rangeFrom = None,
+          rangeTo = None,
+          value = r.temperature
         )
       }
     }
