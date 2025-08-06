@@ -20,7 +20,9 @@ lazy val root = project
       "org.tpolecat" %% "doobie-postgres"  % "1.0.0-RC8",          // Postgres driver 42.7.5 + type mappings.
       "org.tpolecat" %% "doobie-specs2"    % "1.0.0-RC8" % "test", // Specs2 support for typechecking statements.
       "org.tpolecat" %% "doobie-scalatest" % "1.0.0-RC8" % "test",  // ScalaTest support for typechecking statements.
-      "org.postgresql" % "postgresql" % "42.7.7"
+      "org.postgresql" % "postgresql" % "42.7.7",
+      "com.amazonaws" % "aws-lambda-java-core" % "1.3.0",
+"com.amazonaws" % "aws-lambda-java-events" % "3.16.1"
 
     )
   )
