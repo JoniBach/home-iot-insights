@@ -28,12 +28,14 @@ class InsightsLambdaHandler extends RequestHandler[Unit, String] {
       val readingsPort = new DoobieReadingsRepository()
       val deviceRoomBuildingsPort = new DoobieDeviceRoomBuildingRepository()
       val sensorsPort = new DoSensorsRepository()
+      val insightsPort = new DoobieInsightsRepository()
       
       // Initialize use case
       val averageTemperature = new CalculateDailyAverageTemperature(
         readingsPort, 
         deviceRoomBuildingsPort, 
-        sensorsPort
+        sensorsPort,
+        insightsPort
       )
       
       // Configure JSON pretty printing

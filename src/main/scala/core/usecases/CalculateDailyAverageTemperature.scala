@@ -1,7 +1,7 @@
 package core.usecases
 
 import core.entities.{Insight, Reading}
-import core.ports.{DeviceRoomBuildingsPort, ReadingsPort, SensorsPort}
+import core.ports.{DeviceRoomBuildingsPort, InsightsPort, ReadingsPort, SensorsPort}
 
 import java.time.{Instant, LocalDateTime, ZoneOffset}
 import java.util.UUID
@@ -11,7 +11,8 @@ import cats.syntax.all._
 final class CalculateDailyAverageTemperature[F[_]: Monad](
     readingsPort: ReadingsPort[F],
     deviceRoomBuildingsPort: DeviceRoomBuildingsPort[F],
-    sensorsPort: SensorsPort[F]
+    sensorsPort: SensorsPort[F],
+    insightsPort: InsightsPort[F]
 ) {
 
 
@@ -46,56 +47,51 @@ final class CalculateDailyAverageTemperature[F[_]: Monad](
     val insightTypeId = UUID.fromString("c160c68c-0b82-4e1a-8bd8-6aab738c0266") // Daily Average Temperature type
 
     // Get all readings for the previous day (midnight to midnight)
-    readingsPort.getReadingsForPeriod(previousDayStart, previousDayEnd).flatMap { readings =>
-      // Get unique device IDs from readings
-      val deviceIds = readings.map(_.macAddress).distinct
+    for {
+      readings <- readingsPort.getReadingsForPeriod(previousDayStart, previousDayEnd)
       
-      // Get unique sensor keys from readings
-      val sensorKeys = readings.map(_.sensor).distinct
+      // Get unique device IDs and sensor keys from readings
+      deviceIds = readings.map(_.macAddress).distinct
+      sensorKeys = readings.map(_.sensor).distinct
       
       // Fetch all device-room-building relationships for devices with readings
-      deviceIds.traverse { deviceId => 
+      deviceRelationships <- deviceIds.traverse { deviceId => 
         deviceRoomBuildingsPort.findByDeviceId(deviceId).map(_.map(deviceId -> _))
-      }.flatMap { deviceRelationships =>
-        val deviceRelationshipsMap = deviceRelationships.collect { case Some(pair) => pair }.toMap
-
-        // Fetch sensor IDs for all unique sensor keys
-        sensorKeys.traverse { sensorKey =>
-          sensorsPort.findByKey(sensorKey).map(_.map(sensor => sensorKey -> sensor.id))
-        }.map { sensorIds =>
-          val sensorIdsMap = sensorIds.collect { case Some(pair) => pair }.toMap
-
-          // Group readings by device (macAddress) and calculate average for each
-          val insights = readings
-            .groupBy(r => (r.macAddress, r.sensor))
-            .flatMap { case ((deviceId, sensorKey), deviceReadings) =>
-              val avgTemperature = calculateAverage(deviceReadings)
-
-              // Get the relationship for this device, if it exists
-              val relationship = deviceRelationshipsMap.get(deviceId)
-
-              // Get the sensor ID for this sensor key, if it exists
-              val sensorId = sensorIdsMap.get(sensorKey)
-
-              // Create an insight for this device and sensor combination
-              Some(Insight(
-                id = None,
-                macAddress = deviceId,
-                sensor = sensorKey,
-                value = avgTemperature,
-                buildingId = relationship.flatMap(_.buildingId),
-                roomId = relationship.flatMap(_.roomId),
-                insightTypeId = Some(insightTypeId),
-                rangeFrom = Some(previousDayStart),
-                rangeTo = Some(previousDayEnd),
-                createdAt = now
-              ))
-            }
-            .toList
-
-          insights
-        }
       }
-    }
+      deviceRelationshipsMap = deviceRelationships.collect { case Some(pair) => pair }.toMap
+
+      // Fetch sensor IDs for all unique sensor keys
+      sensorIds <- sensorKeys.traverse { sensorKey =>
+        sensorsPort.findByKey(sensorKey).map(_.map(sensor => sensorKey -> sensor.id))
+      }
+      sensorIdsMap = sensorIds.collect { case Some(pair) => pair }.toMap
+
+      // Process all insights
+      insights <- readings
+        .groupBy(r => (r.macAddress, r.sensor))
+        .toList
+        .traverse { case ((deviceId, sensorKey), deviceReadings) =>
+          val avgTemperature = calculateAverage(deviceReadings)
+          val relationship = deviceRelationshipsMap.get(deviceId)
+          val sensorId = sensorIdsMap.get(sensorKey)
+
+          // Create an insight for this device and sensor combination
+          val insight = Insight(
+            id = None,
+            macAddress = deviceId,
+            sensor = sensorKey,
+            value = avgTemperature,
+            buildingId = relationship.flatMap(_.buildingId),
+            roomId = relationship.flatMap(_.roomId),
+            insightTypeId = Some(insightTypeId),
+            rangeFrom = Some(previousDayStart),
+            rangeTo = Some(previousDayEnd),
+            createdAt = now
+          )
+
+          // Create an insight in the database and return the created insight
+          insightsPort.create(insight)
+        }
+    } yield insights
   }
 }
