@@ -1,10 +1,10 @@
-package application.usecases
+package core.usecases
 
 import cats.effect.IO
 import core.entities.Reading
-import core.ports.ReadingRepository
+import core.ports.ReadingsPort
 
-final class GetLatestReadings(repo: ReadingRepository[IO]) {
+final class GetLatestReadings(readingsPort: ReadingsPort[IO]) {
   def execute(limit: Int): IO[List[Reading]] =
-    repo.getLatestReadings(limit)
+    readingsPort.getLatestReadings(limit)
 }

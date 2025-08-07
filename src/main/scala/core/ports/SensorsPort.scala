@@ -5,7 +5,7 @@ import core.entities.Sensor
 
 import java.util.UUID
 
-trait SensorRepository[F[_]] {
+trait SensorsPort[F[_]] {
   def findById(id: UUID): F[Option[Sensor]]
   def findByKey(key: String): F[Option[Sensor]]
   def findAll: F[List[Sensor]]

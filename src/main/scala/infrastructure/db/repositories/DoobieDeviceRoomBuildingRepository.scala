@@ -5,12 +5,12 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import core.entities.DeviceRoomBuilding
-import core.ports.{DeviceRoomBuildingRepository => DeviceRoomBuildingRepositoryTrait}
+import core.ports.DeviceRoomBuildingsPort
 import infrastructure.db.config.DatabaseConfig
 
 import java.util.UUID
 
-final class DoobieDeviceRoomBuildingRepository extends DeviceRoomBuildingRepositoryTrait[IO] {
+final class DoobieDeviceRoomBuildingRepository extends DeviceRoomBuildingsPort[IO] {
   
   // Import PostgreSQL UUID type support
   import doobie.postgres.implicits._

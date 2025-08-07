@@ -5,11 +5,11 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import core.entities.Room
-import core.ports.RoomRepository
+import core.ports.RoomsPort
 import java.util.UUID
 import infrastructure.db.config.DatabaseConfig
 
-final class RoomsRepository extends RoomRepository[IO] {
+final class DoobieRoomsRepository extends RoomsPort[IO] {
   
   // Import PostgreSQL UUID type support
   import doobie.postgres.implicits._

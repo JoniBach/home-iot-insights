@@ -1,17 +1,17 @@
-package application.usecases
+package core.usecases
 
 import core.entities.{Insight, Reading}
-import core.ports.{DeviceRoomBuildingRepository, ReadingRepository, SensorRepository}
+import core.ports.{DeviceRoomBuildingsPort, ReadingsPort, SensorsPort}
 
 import java.time.{Instant, LocalDateTime, ZoneOffset}
 import java.util.UUID
 import cats.Monad
 import cats.syntax.all._
 
-final class DailyAverageTemperature[F[_]: Monad](
-    readingRepo: ReadingRepository[F],
-    deviceRoomBuildingRepo: DeviceRoomBuildingRepository[F],
-    sensorRepo: SensorRepository[F]
+final class CalculateDailyAverageTemperature[F[_]: Monad](
+    readingsPort: ReadingsPort[F],
+    deviceRoomBuildingsPort: DeviceRoomBuildingsPort[F],
+    sensorsPort: SensorsPort[F]
 ) {
 
 
@@ -46,7 +46,7 @@ final class DailyAverageTemperature[F[_]: Monad](
     val insightTypeId = UUID.fromString("c160c68c-0b82-4e1a-8bd8-6aab738c0266") // Daily Average Temperature type
 
     // Get all readings for the previous day (midnight to midnight)
-    readingRepo.getReadingsForPeriod(previousDayStart, previousDayEnd).flatMap { readings =>
+    readingsPort.getReadingsForPeriod(previousDayStart, previousDayEnd).flatMap { readings =>
       // Get unique device IDs from readings
       val deviceIds = readings.map(_.macAddress).distinct
       
@@ -54,16 +54,16 @@ final class DailyAverageTemperature[F[_]: Monad](
       val sensorKeys = readings.map(_.sensor).distinct
       
       // Fetch all device-room-building relationships for devices with readings
-      deviceIds.traverse(deviceId => 
-        deviceRoomBuildingRepo.findByDeviceId(deviceId).map(_.map(deviceId -> _))
-      ).flatMap { deviceRelationships =>
-        val deviceRelationshipsMap = deviceRelationships.flatten.toMap
+      deviceIds.traverse { deviceId => 
+        deviceRoomBuildingsPort.findByDeviceId(deviceId).map(_.map(deviceId -> _))
+      }.flatMap { deviceRelationships =>
+        val deviceRelationshipsMap = deviceRelationships.collect { case Some(pair) => pair }.toMap
 
         // Fetch sensor IDs for all unique sensor keys
         sensorKeys.traverse { sensorKey =>
-          sensorRepo.findByKey(sensorKey).map(_.map(sensor => sensorKey -> sensor.id))
+          sensorsPort.findByKey(sensorKey).map(_.map(sensor => sensorKey -> sensor.id))
         }.map { sensorIds =>
-          val sensorIdsMap = sensorIds.flatten.toMap
+          val sensorIdsMap = sensorIds.collect { case Some(pair) => pair }.toMap
 
           // Group readings by device (macAddress) and calculate average for each
           val insights = readings

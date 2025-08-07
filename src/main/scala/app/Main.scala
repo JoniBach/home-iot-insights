@@ -1,45 +1,53 @@
 import cats.effect.{IO, IOApp}
 import cats.implicits._
-import application.usecases.{GetLatestReadings, DailyAverageTemperature}
-import infrastructure.db.repositories.ReadingsRepository
-import infrastructure.db.repositories.DoobieDeviceRoomBuildingRepository
-import infrastructure.db.repositories.SensorsRepository
+import core.usecases.{GetLatestReadings, CalculateDailyAverageTemperature}
+import infrastructure.db.repositories._
+import infrastructure.db.config.DatabaseConfig
 import io.circe.generic.auto._
 import io.circe.syntax._
 import io.circe.Printer
 
 object Main extends IOApp.Simple {
-  def run: IO[Unit] = {
-    val readingRepo = new ReadingsRepository()
-    val deviceRoomBuildingRepo = new DoobieDeviceRoomBuildingRepository()
-    val sensorRepo = new SensorsRepository()
+  
+  override def run: IO[Unit] = {
+    // Initialize repositories
+    val readingsPort = new DoobieReadingsRepository()
+    val deviceRoomBuildingsPort = new DoobieDeviceRoomBuildingRepository()
+    val sensorsPort = new DoSensorsRepository()
 
-    val averageTemperature = new DailyAverageTemperature(readingRepo, deviceRoomBuildingRepo, sensorRepo)
+    // Initialize use cases
+    val averageTemperature = new CalculateDailyAverageTemperature(readingsPort, deviceRoomBuildingsPort, sensorsPort)
+    val getLatestReadings = new GetLatestReadings(readingsPort)
 
     // Configure pretty-printing for JSON output
     val jsonPrinter = Printer.spaces2.copy(dropNullValues = true)
 
-    val program = for {
-      _ <- IO.println("=== Starting Daily Average Temperature Calculation ===")
-      _ <- IO.println("Fetching and calculating average temperatures...\n")
+    // Main program
+    for {
+      _ <- IO.println("=== Starting Home IoT Insights ===")
+      _ <- IO.println("Fetching latest readings...")
       
+      readings <- getLatestReadings.execute(5)
+      _ <- IO.println(s"Latest readings: ${readings.mkString("\n")}")
+      
+      // Generate and display insights
+      _ <- IO.println("\n=== Generating Insights ===")
       insights <- averageTemperature.execute()
       
-      _ <- IO.println("=== Insights Generated ===")
-      _ <- if (insights.isEmpty) IO.println("No insights were generated. The database might be empty or there was an issue processing the data.")
-          else IO.unit
-          
-      _ <- insights.traverse_ { insight =>
-        val json = jsonPrinter.print(insight.asJson)
-        IO.println("-" * 80) *>
-        IO.println(json)
+      _ <- if (insights.isEmpty) {
+        IO.println("No insights were generated. The database might be empty or there was an issue processing the data.")
+      } else {
+        IO.println(s"Generated ${insights.length} insights:") >>
+        insights.traverse_ { insight =>
+          val json = jsonPrinter.print(insight.asJson)
+          IO.println("-" * 80) >>
+          IO.println(json)
+        }
       }
       
-      _ <- IO.println(s"\n=== End of Insights (${insights.length} insights) ===")
+      _ <- IO.println("=== Application Finished ===")
     } yield ()
-
-    program.handleErrorWith { error =>
-      IO.println(s"Database connection failed: ${error.getMessage}")
-    }
+  }.handleErrorWith { error =>
+    IO.println(s"An error occurred: ${error.getMessage}")
   }
 }

@@ -5,12 +5,12 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import core.entities.Reading
-import core.ports.ReadingRepository
+import core.ports.ReadingsPort
 import java.time.Instant
 import java.util.UUID
 import infrastructure.db.config.DatabaseConfig
 
-final class ReadingsRepository extends ReadingRepository[IO] {
+final class DoobieReadingsRepository extends ReadingsPort[IO] {
   
   // Import PostgreSQL UUID type support
   import doobie.postgres.implicits._

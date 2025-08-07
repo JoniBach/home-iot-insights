@@ -5,11 +5,11 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import core.entities.Sensor
-import core.ports.SensorRepository
+import core.ports.SensorsPort
 import java.util.UUID
 import infrastructure.db.config.DatabaseConfig
 
-final class SensorsRepository extends SensorRepository[IO] {
+final class DoSensorsRepository extends SensorsPort[IO] {
   
   // Import PostgreSQL UUID type support
   import doobie.postgres.implicits._

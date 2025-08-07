@@ -5,7 +5,7 @@ import core.entities.DeviceRoomBuilding
 
 import java.util.UUID
 
-trait DeviceRoomBuildingRepository[F[_]] {
+trait DeviceRoomBuildingsPort[F[_]] {
   /**
    * Find a device-room-building relationship by device ID (MAC address)
    */
