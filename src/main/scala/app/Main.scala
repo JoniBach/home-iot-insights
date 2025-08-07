@@ -4,6 +4,9 @@ import application.usecases.{GetLatestReadings, DailyAverageTemperature}
 import infrastructure.db.repositories.ReadingsRepository
 import infrastructure.db.repositories.DoobieDeviceRoomBuildingRepository
 import infrastructure.db.repositories.SensorsRepository
+import io.circe.generic.auto._
+import io.circe.syntax._
+import io.circe.Printer
 
 object Main extends IOApp.Simple {
   def run: IO[Unit] = {
@@ -12,6 +15,9 @@ object Main extends IOApp.Simple {
     val sensorRepo = new SensorsRepository()
 
     val averageTemperature = new DailyAverageTemperature(readingRepo, deviceRoomBuildingRepo, sensorRepo)
+
+    // Configure pretty-printing for JSON output
+    val jsonPrinter = Printer.spaces2.copy(dropNullValues = true)
 
     val program = for {
       _ <- IO.println("=== Starting Daily Average Temperature Calculation ===")
@@ -24,19 +30,12 @@ object Main extends IOApp.Simple {
           else IO.unit
           
       _ <- insights.traverse_ { insight =>
+        val json = jsonPrinter.print(insight.asJson)
         IO.println("-" * 80) *>
-        IO.println(s"ID: ${insight.id.getOrElse("N/A")}") *>
-        IO.println(s"MAC Address: ${insight.macAddress}") *>
-        IO.println(s"Sensor: ${insight.sensor}") *>
-        IO.println(s"Average Temperature: ${insight.value}°C") *>
-        IO.println(s"Building ID: ${insight.buildingId.getOrElse("N/A")}") *>
-        IO.println(s"Room ID: ${insight.roomId.getOrElse("N/A")}") *>
-        IO.println(s"Insight Type ID: ${insight.insightTypeId.getOrElse("N/A")}") *>
-        IO.println(s"Time Range: ${insight.rangeFrom.getOrElse("N/A")} to ${insight.rangeTo.getOrElse("N/A")}") *>
-        IO.println(s"Created At: ${insight.createdAt}")
+        IO.println(json)
       }
       
-      _ <- IO.println("\n=== End of Insights ===")
+      _ <- IO.println(s"\n=== End of Insights (${insights.length} insights) ===")
     } yield ()
 
     program.handleErrorWith { error =>

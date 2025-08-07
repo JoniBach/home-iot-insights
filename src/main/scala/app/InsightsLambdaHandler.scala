@@ -8,7 +8,9 @@ import java.io.{PrintWriter, StringWriter}
 import application.usecases.DailyAverageTemperature
 import infrastructure.db.repositories.{DoobieDeviceRoomBuildingRepository, ReadingsRepository, SensorsRepository}
 import cats.implicits._
-
+import io.circe.generic.auto._
+import io.circe.syntax._
+import io.circe.Printer
 class InsightsLambdaHandler extends RequestHandler[Unit, String] {
 
   private def stackTraceToString(t: Throwable): String = {
@@ -27,6 +29,7 @@ class InsightsLambdaHandler extends RequestHandler[Unit, String] {
       val sensorRepo = new SensorsRepository()
       
       val averageTemperature = new DailyAverageTemperature(readingsRepo, deviceRoomBuildingRepo, sensorRepo)
+      val jsonPrinter = Printer.spaces2.copy(dropNullValues = true)
       
       logger.log("=== Starting Daily Average Temperature Calculation ===")
       logger.log("Fetching and calculating average temperatures...\n")
@@ -41,18 +44,11 @@ class InsightsLambdaHandler extends RequestHandler[Unit, String] {
           val insightsLog = if (insights.isEmpty) {
             "No insights were generated. The database might be empty or there was an issue processing the data.\n"
           } else {
-            insights.map { insight =>
-              "-" * 80 + "\n" +
-              s"ID: ${insight.id.getOrElse("N/A")}\n" +
-              s"MAC Address: ${insight.macAddress}\n" +
-              s"Sensor: ${insight.sensor}\n" +
-              s"Average Temperature: ${insight.value}°C\n" +
-              s"Building ID: ${insight.buildingId.getOrElse("N/A")}\n" +
-              s"Room ID: ${insight.roomId.getOrElse("N/A")}\n" +
-              s"Insight Type ID: ${insight.insightTypeId.getOrElse("N/A")}\n" +
-              s"Time Range: ${insight.rangeFrom.getOrElse("N/A")} to ${insight.rangeTo.getOrElse("N/A")}\n" +
-              s"Created At: ${insight.createdAt}"
-            }.mkString("\n")
+           insights.traverse_ { insight =>
+        val json = jsonPrinter.print(insight.asJson)
+        IO.println("-" * 80) *>
+        IO.println(json)
+      }
           }
           
           val fullMessage = message + insightsLog + "\n\n=== End of Insights ==="

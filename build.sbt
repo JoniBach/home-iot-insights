@@ -21,6 +21,11 @@ lazy val root = project
       "org.postgresql" % "postgresql" % "42.7.7",
       "com.amazonaws" % "aws-lambda-java-core" % "1.3.0",
       "com.amazonaws" % "aws-lambda-java-events" % "3.16.1",
+      // Circe for JSON serialization
+      "io.circe" %% "circe-core" % "0.14.8",
+      "io.circe" %% "circe-generic" % "0.14.8",
+      "io.circe" %% "circe-parser" % "0.14.8",
+      "io.circe" %% "circe-literal" % "0.14.8"
     ),
 
     // Assembly settings
