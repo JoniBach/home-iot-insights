@@ -30,10 +30,10 @@ class InsightsLambdaHandler extends RequestHandler[Unit, String] {
       val sensorsPort = new DoSensorsRepository()
       val insightsPort = new DoobieInsightsRepository()
       
-      // Initialize use case
-      val averageTemperature = new CalculateDailyAverageTemperature(
-        readingsPort, 
-        deviceRoomBuildingsPort, 
+      // Initialize use case with default dependencies
+      val averageTemperature = CalculateDailyAverageTemperature.default[IO](
+        readingsPort,
+        deviceRoomBuildingsPort,
         sensorsPort,
         insightsPort
       )

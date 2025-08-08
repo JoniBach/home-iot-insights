@@ -17,7 +17,12 @@ object Main extends IOApp.Simple {
     val insightsPort = new DoobieInsightsRepository()
 
     // Initialize use cases
-    val averageTemperature = new CalculateDailyAverageTemperature(readingsPort, deviceRoomBuildingsPort, sensorsPort, insightsPort)
+    val averageTemperature = CalculateDailyAverageTemperature.default[IO](
+      readingsPort,
+      deviceRoomBuildingsPort,
+      sensorsPort,
+      insightsPort
+    )
     val getLatestReadings = new GetLatestReadings(readingsPort)
 
     // Configure pretty-printing for JSON output

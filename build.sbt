@@ -9,7 +9,9 @@ lazy val root = project
 
     // Dependencies
     libraryDependencies ++= Seq(
+      // Test dependencies
       "org.scalameta" %% "munit" % "1.0.0" % Test,
+      // Main dependencies
       "org.typelevel" %% "cats-core" % "2.13.0",
       "org.typelevel" %% "cats-effect" % "3.6.3",
       "org.tpolecat" %% "doobie-core" % "1.0.0-RC8",
