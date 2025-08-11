@@ -8,6 +8,7 @@ import java.io.{PrintWriter, StringWriter}
 import infrastructure.db.repositories._
 import infrastructure.db.config.DatabaseConfig
 import core.usecases.calculate.daily.average.CalculateDailyAverageTemperature
+import core.usecases.calculate.daily.average.CalculateDailyAverageHumidity
 import io.circe.generic.auto._
 import io.circe.syntax._
 import io.circe.Printer
@@ -37,24 +38,46 @@ class InsightsLambdaHandler extends RequestHandler[Unit, String] {
         sensorsPort,
         insightsPort
       )
+
+      val averageHumidity = CalculateDailyAverageHumidity.default[IO](
+        readingsPort,
+        deviceRoomBuildingsPort,
+        sensorsPort,
+        insightsPort
+      )
       
       // Configure JSON pretty printing
       val jsonPrinter = Printer.spaces2.copy(dropNullValues = true)
       
       logger.log("=== Starting Daily Average Temperature Calculation ===")
       logger.log("Fetching and calculating average temperatures...\n")
+      val temperatureInsights = averageTemperature.execute().unsafeRunSync()
       
-      // Execute the use case
-      val insights = averageTemperature.execute().unsafeRunSync()
+      logger.log("=== Starting Daily Average Humidity Calculation ===")
+      logger.log("Fetching and calculating average humidity...\n")
+      val humidityInsights = averageHumidity.execute().unsafeRunSync()
+      
       
       val message = new StringBuilder()
-      message.append("=== Insights Generated ===\n")
-      message.append(s"Successfully generated ${insights.length} insights\n\n")
       
-      if (insights.isEmpty) {
-        message.append("No insights were generated. The database might be empty or there was an issue processing the data.\n")
+      message.append("=== Insights Generated ===\n")
+      message.append(s"Successfully generated ${temperatureInsights.length} temperature insights\n\n")
+      message.append(s"Successfully generated ${humidityInsights.length} humidity insights\n\n")
+      
+      if (temperatureInsights.isEmpty) {
+        message.append("No temperature insights were generated. The database might be empty or there was an issue processing the data.\n")
       } else {
-        insights.foreach { insight =>
+        temperatureInsights.foreach { insight =>
+          val json = jsonPrinter.print(insight.asJson)
+          message.append("-" * 80).append("\n")
+          message.append(json).append("\n")
+        }
+      }
+
+      if (humidityInsights.isEmpty) {
+        message.append("No humidity insights were generated. The database might be empty or there was an issue processing the data.\n")
+      } else {
+        humidityInsights.foreach { insight =>
           val json = jsonPrinter.print(insight.asJson)
           message.append("-" * 80).append("\n")
           message.append(json).append("\n")

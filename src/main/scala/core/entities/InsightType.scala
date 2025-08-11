@@ -12,35 +12,21 @@ final case class InsightType(
 
 object InsightType {
   // Temperature insight types
-  val TemperatureCurrent = InsightType(
-    UUID.fromString("00000000-0000-0000-0000-000000000001"),
-    "current_temperature",
-    Some("Current temperature reading")
-  )
-  
   val TemperatureAverage = InsightType(
-    UUID.fromString("00000000-0000-0000-0000-000000000002"),
-    "average_temperature",
-    Some("Average temperature over a time period")
+    UUID.fromString("56da8d03-a64e-4395-8a7c-ebedbf8b122b"),
+    "average_humidity_daily",
+    Some("Average temperature over a day period")
   )
   
   // Humidity insight types
-  val HumidityCurrent = InsightType(
-    UUID.fromString("00000000-0000-0000-0000-000000000003"),
-    "current_humidity",
-    Some("Current humidity reading")
-  )
-  
   val HumidityAverage = InsightType(
-    UUID.fromString("00000000-0000-0000-0000-000000000004"),
-    "average_humidity",
-    Some("Average humidity over a time period")
+    UUID.fromString("c160c68c-0b82-4e1a-8bd8-6aab738c0266"),
+    "average_temperature_daily",
+    Some("Average humidity over a day period")
   )
   
   val AllTypes = List(
-    TemperatureCurrent,
     TemperatureAverage,
-    HumidityCurrent,
     HumidityAverage
   )
   

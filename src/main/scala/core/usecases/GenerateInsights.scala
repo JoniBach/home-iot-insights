@@ -26,14 +26,14 @@ final class GenerateInsights[F[_]: Monad](
           createInsight(
             reading = reading,
             value = reading.temperature,
-            insightType = InsightType.TemperatureCurrent,
+            insightType = InsightType.TemperatureAverage,
             timestamp = timestamp
           ),
           // Humidity insight
           createInsight(
             reading = reading,
             value = reading.humidity,
-            insightType = InsightType.HumidityCurrent,
+            insightType = InsightType.HumidityAverage,
             timestamp = timestamp
           )
         )

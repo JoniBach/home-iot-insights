@@ -22,7 +22,7 @@ final class CalculateDailyAverageTemperature[F[_]: Monad](
     insightsPort: InsightsPort[F]
 ) {
   // Daily Average Temperature insight type ID
-  private val insightTypeId = UUID.fromString("c160c68c-0b82-4e1a-8bd8-6aab738c0266")
+  private val insightTypeId = UUID.fromString("56da8d03-a64e-4395-8a7c-ebedbf8b122b")
 
   /**
    * Executes the daily average temperature calculation.
