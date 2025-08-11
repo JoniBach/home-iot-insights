@@ -7,7 +7,7 @@ import cats.implicits._
 import java.io.{PrintWriter, StringWriter}
 import infrastructure.db.repositories._
 import infrastructure.db.config.DatabaseConfig
-import core.usecases.CalculateDailyAverageTemperature
+import core.usecases.calculate.daily.average.CalculateDailyAverageTemperature
 import io.circe.generic.auto._
 import io.circe.syntax._
 import io.circe.Printer

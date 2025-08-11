@@ -1,6 +1,7 @@
 import cats.effect.{IO, IOApp}
 import cats.implicits._
-import core.usecases.{GetLatestReadings, CalculateDailyAverageTemperature}
+import core.usecases.{GetLatestReadings}
+import core.usecases.calculate.daily.average.CalculateDailyAverageTemperature
 import infrastructure.db.repositories._
 import infrastructure.db.config.DatabaseConfig
 import io.circe.generic.auto._

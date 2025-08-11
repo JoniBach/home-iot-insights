@@ -1,8 +1,9 @@
 package core.domain.context
-import cats.syntax.applicative._  // This is the most common and recommended way
 
 import core.entities.DeviceRoomBuilding
+import core.ports.{DeviceRoomBuildingsPort, SensorsPort}
 import java.util.UUID
+import cats.Monad
 
 /**
  * Represents the context needed for humidity insights generation.
@@ -28,19 +29,21 @@ trait HumidityContextProvider[F[_]] {
 
 object HumidityContextProvider {
   
-  def default[F[_]: cats.Monad](
-    deviceRelationships: Map[String, DeviceRoomBuilding],
-    sensorIds: Map[String, UUID]
-  ): HumidityContextProvider[F] = new HumidityContextProvider[F] {
-    override def getContext(
-      deviceIds: Set[String],
-      sensorKeys: Set[String]
-    ): F[HumidityContext] = 
-      HumidityContext(
-        deviceRelationships = deviceRelationships.view.filterKeys(deviceIds.contains).toMap,
-        sensorIds = sensorIds.view.filterKeys(sensorKeys.contains).toMap
-      ).pure[F]
+  def default[F[_]: Monad](
+    deviceRoomBuildingsPort: DeviceRoomBuildingsPort[F],
+    sensorsPort: SensorsPort[F]
+  ): HumidityContextProvider[F] = {
+    val genericProvider = ContextProvider.create[F, HumidityContext](
+      deviceRoomBuildingsPort,
+      sensorsPort,
+      HumidityContext.apply
+    )
+    
+    new HumidityContextProvider[F] {
+      override def getContext(
+        deviceIds: Set[String],
+        sensorKeys: Set[String]
+      ): F[HumidityContext] = genericProvider.getContext(deviceIds, sensorKeys)
+    }
   }
-  
-  // Add any additional factory methods or utilities here
 }

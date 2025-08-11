@@ -1,6 +1,7 @@
 package core.domain.context
 
 import core.entities.DeviceRoomBuilding
+import core.ports.{DeviceRoomBuildingsPort, SensorsPort}
 import java.util.UUID
 
 /**
@@ -28,33 +29,20 @@ trait TemperatureContextProvider[F[_]] {
 object TemperatureContextProvider {
   
   def default[F[_]: cats.Monad](
-    deviceRoomBuildingsPort: core.ports.DeviceRoomBuildingsPort[F],
-    sensorsPort: core.ports.SensorsPort[F]
-  ): TemperatureContextProvider[F] = new TemperatureContextProvider[F] {
+    deviceRoomBuildingsPort: DeviceRoomBuildingsPort[F],
+    sensorsPort: SensorsPort[F]
+  ): TemperatureContextProvider[F] = {
+    val genericProvider = ContextProvider.create[F, TemperatureContext](
+      deviceRoomBuildingsPort,
+      sensorsPort,
+      TemperatureContext.apply
+    )
     
-    override def getContext(
-      deviceIds: Set[String],
-      sensorKeys: Set[String]
-    ): F[TemperatureContext] = {
-      import cats.syntax.all._
-      
-      for {
-        // Fetch device relationships
-        deviceRelationships <- deviceIds.toList.traverse { deviceId =>
-          deviceRoomBuildingsPort.findByDeviceId(deviceId)
-            .map(_.map(deviceId -> _))
-        }
-        
-        // Fetch sensor IDs
-        sensorIds <- sensorKeys.toList.traverse { sensorKey =>
-          sensorsPort.findByKey(sensorKey)
-            .map(_.map(sensor => sensorKey -> sensor.id))
-        }
-        
-      } yield TemperatureContext(
-        deviceRelationships = deviceRelationships.collect { case Some((id, rel)) => id -> rel }.toMap,
-        sensorIds = sensorIds.collect { case Some((key, id)) => key -> id }.toMap
-      )
+    new TemperatureContextProvider[F] {
+      override def getContext(
+        deviceIds: Set[String],
+        sensorKeys: Set[String]
+      ): F[TemperatureContext] = genericProvider.getContext(deviceIds, sensorKeys)
     }
   }
 }

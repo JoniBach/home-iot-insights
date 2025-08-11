@@ -1,4 +1,4 @@
-package core.usecases
+package core.usecases.calculate.daily.average
 
 import core.domain.context.{TemperatureContext, TemperatureContextProvider}
 import core.domain.temperature.{TemperatureCalculator, TemperatureDataAggregator}
