@@ -7,8 +7,7 @@ import cats.implicits._
 import java.io.{PrintWriter, StringWriter}
 import infrastructure.db.repositories._
 import infrastructure.db.config.DatabaseConfig
-import core.usecases.calculate.daily.average.CalculateDailyAverageTemperature
-import core.usecases.calculate.daily.average.CalculateDailyAverageHumidity
+import core.usecases.calculate.daily.average.{CalculateDailyAverageTemperature, CalculateDailyAverageHumidity, CalculateDailyAveragePressure}
 import io.circe.generic.auto._
 import io.circe.syntax._
 import io.circe.Printer
@@ -45,6 +44,13 @@ class InsightsLambdaHandler extends RequestHandler[Unit, String] {
         sensorsPort,
         insightsPort
       )
+
+      val averagePressure = CalculateDailyAveragePressure.default[IO](
+        readingsPort,
+        deviceRoomBuildingsPort,
+        sensorsPort,
+        insightsPort
+      )
       
       // Configure JSON pretty printing
       val jsonPrinter = Printer.spaces2.copy(dropNullValues = true)
@@ -57,12 +63,16 @@ class InsightsLambdaHandler extends RequestHandler[Unit, String] {
       logger.log("Fetching and calculating average humidity...\n")
       val humidityInsights = averageHumidity.execute().unsafeRunSync()
       
+      logger.log("=== Starting Daily Average Pressure Calculation ===")
+      logger.log("Fetching and calculating average pressure...\n")
+      val pressureInsights = averagePressure.execute().unsafeRunSync()
       
       val message = new StringBuilder()
       
       message.append("=== Insights Generated ===\n")
       message.append(s"Successfully generated ${temperatureInsights.length} temperature insights\n\n")
       message.append(s"Successfully generated ${humidityInsights.length} humidity insights\n\n")
+      message.append(s"Successfully generated ${pressureInsights.length} pressure insights\n\n")
       
       if (temperatureInsights.isEmpty) {
         message.append("No temperature insights were generated. The database might be empty or there was an issue processing the data.\n")
@@ -78,6 +88,16 @@ class InsightsLambdaHandler extends RequestHandler[Unit, String] {
         message.append("No humidity insights were generated. The database might be empty or there was an issue processing the data.\n")
       } else {
         humidityInsights.foreach { insight =>
+          val json = jsonPrinter.print(insight.asJson)
+          message.append("-" * 80).append("\n")
+          message.append(json).append("\n")
+        }
+      }
+      
+      if (pressureInsights.isEmpty) {
+        message.append("No pressure insights were generated. The database might be empty or there was an issue processing the data.\n")
+      } else {
+        pressureInsights.foreach { insight =>
           val json = jsonPrinter.print(insight.asJson)
           message.append("-" * 80).append("\n")
           message.append(json).append("\n")

@@ -24,10 +24,18 @@ object InsightType {
     "average_temperature_daily",
     Some("Average humidity over a day period")
   )
+
+  // pressure insight types
+  val PressureAverage = InsightType(
+    UUID.fromString("d1ab15e4-5b4e-460c-8e80-4a8fb7c5fe34"),
+    "average_pressure_daily",
+    Some("Average pressure over a day")
+  )
   
   val AllTypes = List(
     TemperatureAverage,
-    HumidityAverage
+    HumidityAverage,
+    PressureAverage
   )
   
   def fromName(name: String): Option[InsightType] =

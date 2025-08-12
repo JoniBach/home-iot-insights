@@ -35,6 +35,13 @@ final class GenerateInsights[F[_]: Monad](
             value = reading.humidity,
             insightType = InsightType.HumidityAverage,
             timestamp = timestamp
+          ),
+          // Pressure insight
+          createInsight(
+            reading = reading,
+            value = reading.pressure,
+            insightType = InsightType.PressureAverage,
+            timestamp = timestamp
           )
         )
       }
@@ -77,5 +84,14 @@ final class GenerateInsights[F[_]: Monad](
   def calculateAverageTemperature(readings: List[Reading]): Option[Double] = {
     if (readings.isEmpty) None
     else Some(readings.map(_.temperature).sum / readings.size)
+  }
+
+  /**
+   * Calculate average pressure over a time period (example method)
+   */
+
+  def calculateAveragePressure(readings: List[Reading]): Option[Double] = {
+    if (readings.isEmpty) None
+    else Some(readings.map(_.pressure).sum / readings.size)
   }
 }
