@@ -1,7 +1,7 @@
 package core.usecases.calculate.daily.average
 
 import core.domain.context.PressureContextProvider
-import core.domain.pressure.{PressureCalculator, PressureDataAggregator}
+import core.domain.{InsightCalculator, InsightDataAggregator, InsightType}
 import core.domain.time.TimeProvider
 import core.entities.Insight
 import core.ports.InsightsPort
@@ -20,7 +20,7 @@ import cats.syntax.all._
   */
 final class CalculateDailyAveragePressure[F[_]: Monad](
     timeProvider: TimeProvider[F],
-    dataAggregator: PressureDataAggregator[F],
+    dataAggregator: InsightDataAggregator[F],
     contextProvider: PressureContextProvider[F],
     insightsPort: InsightsPort[F]
 ) {
@@ -43,7 +43,7 @@ final class CalculateDailyAveragePressure[F[_]: Monad](
       now <- timeProvider.now
 
       // Get average pressure for all device-sensor pairs
-      averages <- dataAggregator.aggregateDailyPressure(start, end)
+      averages <- dataAggregator.aggregateDailyInsight(start, end)
 
       // Get context for all devices and sensors with readings
       context <- contextProvider.getContext(
@@ -83,9 +83,9 @@ object CalculateDailyAveragePressure {
       insightsPort: InsightsPort[F]
   ): CalculateDailyAveragePressure[F] = {
     val timeProvider = TimeProvider.default[F]
-    val pressureCalculator = PressureCalculator.default[F]
+    val insightCalculator = InsightCalculator.default[F]
     val dataAggregator =
-      PressureDataAggregator.default[F](readingsPort, pressureCalculator)
+      InsightDataAggregator.default[F](readingsPort, insightCalculator, InsightType.Pressure)
     val contextProvider =
       PressureContextProvider.default[F](deviceRoomBuildingsPort, sensorsPort)
 

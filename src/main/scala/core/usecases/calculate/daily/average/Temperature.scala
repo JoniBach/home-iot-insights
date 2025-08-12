@@ -1,7 +1,7 @@
 package core.usecases.calculate.daily.average
 
 import core.domain.context.{TemperatureContext, TemperatureContextProvider}
-import core.domain.temperature.{TemperatureCalculator, TemperatureDataAggregator}
+import core.domain.{InsightCalculator, InsightDataAggregator, InsightType}
 import core.domain.time.TimeProvider
 import core.entities.Insight
 import core.ports.InsightsPort
@@ -17,7 +17,7 @@ import cats.syntax.all._
  */
 final class CalculateDailyAverageTemperature[F[_]: Monad](
     timeProvider: TimeProvider[F],
-    dataAggregator: TemperatureDataAggregator[F],
+    dataAggregator: InsightDataAggregator[F],
     contextProvider: TemperatureContextProvider[F],
     insightsPort: InsightsPort[F]
 ) {
@@ -37,7 +37,7 @@ final class CalculateDailyAverageTemperature[F[_]: Monad](
       now <- timeProvider.now
       
       // Get average temperatures for all device-sensor pairs
-      averages <- dataAggregator.aggregateDailyTemperatures(start, end)
+      averages <- dataAggregator.aggregateDailyInsight(start, end)
       
       // Get context for all devices and sensors with readings
       context <- contextProvider.getContext(
@@ -80,8 +80,8 @@ object CalculateDailyAverageTemperature {
     insightsPort: core.ports.InsightsPort[F]
   ): CalculateDailyAverageTemperature[F] = {
     val timeProvider = TimeProvider.default[F]
-    val temperatureCalculator = TemperatureCalculator.default[F]
-    val dataAggregator = TemperatureDataAggregator.default[F](readingsPort, temperatureCalculator)
+    val insightCalculator = InsightCalculator.default[F]
+    val dataAggregator = InsightDataAggregator.default[F](readingsPort, insightCalculator, InsightType.Temperature)
     val contextProvider = TemperatureContextProvider.default[F](deviceRoomBuildingsPort, sensorsPort)
     
     new CalculateDailyAverageTemperature[F](

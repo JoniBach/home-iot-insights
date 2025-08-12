@@ -1,7 +1,8 @@
 package core.usecases.calculate.daily.average
 
 import core.domain.context.HumidityContextProvider
-import core.domain.humidity.{HumidityCalculator, HumidityDataAggregator}
+import core.domain.{InsightCalculator, InsightDataAggregator, InsightType}
+
 import core.domain.time.TimeProvider
 import core.entities.Insight
 import core.ports.InsightsPort
@@ -17,7 +18,7 @@ import cats.syntax.all._
  */
 final class CalculateDailyAverageHumidity[F[_]: Monad](
     timeProvider: TimeProvider[F],
-    dataAggregator: HumidityDataAggregator[F],
+    dataAggregator: InsightDataAggregator[F],
     contextProvider: HumidityContextProvider[F],
     insightsPort: InsightsPort[F]
 ) {
@@ -37,7 +38,7 @@ final class CalculateDailyAverageHumidity[F[_]: Monad](
       now <- timeProvider.now
       
       // Get average humidity for all device-sensor pairs
-      averages <- dataAggregator.aggregateDailyHumidity(start, end)
+      averages <- dataAggregator.aggregateDailyInsight(start, end)
       
       // Get context for all devices and sensors with readings
       context <- contextProvider.getContext(
@@ -80,8 +81,8 @@ object CalculateDailyAverageHumidity {
     insightsPort: core.ports.InsightsPort[F]
   ): CalculateDailyAverageHumidity[F] = {
     val timeProvider = TimeProvider.default[F]
-    val humidityCalculator = HumidityCalculator.default[F]
-    val dataAggregator = HumidityDataAggregator.default[F](readingsPort, humidityCalculator)
+    val insightCalculator = InsightCalculator.default[F]
+    val dataAggregator = InsightDataAggregator.default[F](readingsPort, insightCalculator, InsightType.Humidity)
     val contextProvider = HumidityContextProvider.default[F](deviceRoomBuildingsPort, sensorsPort)
     
     new CalculateDailyAverageHumidity[F](
